@@ -28,6 +28,15 @@ variable "custom_attributes" {
   default = []
 }
 
+variable "gpgkey" {
+  description = "Gitlab user GPG key configuration"
+  type = object({
+    key     = string           // The armored GPG public key.
+    user_id = optional(string) // The ID of the user to add the GPG key to. 
+  })
+  default = null
+}
+
 variable "gpgkeys" {
   description = "Gitlab user GPG key configuration"
   type = list(object({
@@ -35,6 +44,21 @@ variable "gpgkeys" {
     user_id = optional(string) // The ID of the user to add the GPG key to. 
   }))
   default = []
+}
+
+variable "sshkey" {
+  description = "Gitlab user ssh keys"
+  type = object({
+    key        = string           // The ssh key.
+    title      = string           // The title of the ssh key.
+    expires_at = optional(string) // The expiration date of the SSH key in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)
+    user_id    = string           // The ID or username of the user.
+  })
+  // validation {
+  //   condition = var.sshkey == null ? true : can(regex("\\d{4}-\\d{2}-\\d{2}", var.sshkey.expires_at))
+  //   error_message = "The date must be in the format YYYY-MM-DD."
+  // }
+  default = null
 }
 
 variable "sshkeys" {
@@ -45,13 +69,43 @@ variable "sshkeys" {
     expires_at = optional(string) // The expiration date of the SSH key in ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)
     user_id    = string           // The ID or username of the user.
   }))
-  validation {
-    condition = length(var.sshkeys) > 0 ? alltrue([
-      for ssh in var.sshkeys : can(regex("\\d{4}-\\d{2}-\\d{2}", ssh.expires_at))
-    if ssh.expires_at != null]) : true
-    error_message = "The date must be in the format YYYY-MM-DD."
-  }
+  // validation {
+  //   condition = length(var.sshkeys) > 0 ? alltrue([
+  //     for ssh in var.sshkeys : can(regex("\\d{4}-\\d{2}-\\d{2}", ssh.expires_at))
+  //   if ssh.expires_at != null]) : true
+  //   error_message = "The date must be in the format YYYY-MM-DD."
+  // }
   default = []
+}
+
+variable "access_token" {
+  description = "Configure the personal access token for a specified user"
+  type = object({
+    expires_at = string       // The token expires at midnight UTC on that date. The date must be in the format YYYY-MM-DD.
+    name       = string       // The name of the personal access token.
+    scopes     = list(string) // The scope for the personal access token.
+    user_id    = string       // The id of the user.
+  })
+  // validation {
+  //   condition = var.access_token.scopes != null ? length(setsubtract(
+  //       var.access_token.scopes,
+  //       [
+  //         "api", "read_user", "read_api", "read_repository",
+  //         "write_repository", "read_registry",
+  //         "write_registry", "sudo", "admin_mode", "create_runner"
+  //       ],
+  //     )) == 0 : true
+  //   error_message = <<EOT
+  //     Valid values are: api, read_user, read_api, 
+  //     read_repository, write_repository, read_registry, 
+  //     write_registry, sudo, admin_mode, create_runner.
+  //     EOT
+  // }
+  // validation {
+  //   condition = var.access_token.expires_at != null ? can(regex("(\\d{4})-(\\d{2})-(\\d{2})", var.access_token.expires_at)): true
+  //   error_message = "The date must be in the format YYYY-MM-DD."
+  // }
+  default = null
 }
 
 variable "access_tokens" {

@@ -12,22 +12,42 @@ output "custom_attributes" {
   })] : []
 }
 
+output "gpgkey_id" {
+  description = "User gpg key resource id"
+  value       = one(gitlab_user_gpgkey.key[*].id)
+}
+
 output "gpgkeys_id" {
   description = "User gpg key resource id"
-  value       = values(gitlab_user_gpgkey.this)[*].id
+  value       = values(gitlab_user_gpgkey.keys)[*].id
 }
 
 output "gpgkeys_key_id" {
   description = "User gpg key id"
-  value       = values(gitlab_user_gpgkey.this)[*].key_id
+  value       = values(gitlab_user_gpgkey.keys)[*].key_id
+}
+
+output "sshkey_id" {
+  description = "Gitlab user ssh key resource id"
+  value       = one(gitlab_user_sshkey.key[*].id)
 }
 
 output "sshkeys_id" {
   description = "Gitlab user ssh key resource id"
-  value       = values(gitlab_user_sshkey.this)[*].id
+  value       = values(gitlab_user_sshkey.keys)[*].id
 }
 
 output "sshkeys_key_id" {
   description = "Gitlab user ssh key id"
-  value       = values(gitlab_user_sshkey.this)[*].key_id
+  value       = values(gitlab_user_sshkey.keys)[*].key_id
+}
+
+output "personal_access_token" {
+  description = "Gitlab user access tokens"
+  value       = one(gitlab_personal_access_token.token[*])
+}
+
+output "personal_access_tokens" {
+  description = "Gitlab user access tokens"
+  value       = values(gitlab_personal_access_token.tokens)[*]
 }

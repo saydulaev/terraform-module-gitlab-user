@@ -5,7 +5,7 @@ resource "random_password" "this" {
 }
 
 resource "gitlab_user" "this" {
-  count = var.user != null && length(keys(var.user)) > 0 ? 1 : 0
+  count = var.user != null ? 1 : 0
 
   email             = var.user.email
   name              = var.user.name
@@ -44,31 +44,63 @@ resource "gitlab_user_custom_attribute" "this" {
   value = each.value.value
 }
 
-resource "gitlab_user_gpgkey" "this" {
+// https://github.com/hashicorp/terraform/issues/30838
+resource "gitlab_user_gpgkey" "key" {
+  count = var.gpgkey != null ? 1 : 0
+
+  user_id = coalesce(local._users[var.gpgkey.user_id].id, one(gitlab_user.this[*].id))
+  key     = var.gpgkey.key
+}
+
+resource "gitlab_user_gpgkey" "keys" {
   for_each = {
     for gpg in var.gpgkeys :
-    substr(gpg.key, 36, 27) => gpg if length(var.gpgkeys) > 0
+    "${index(var.gpgkeys, gpg)}" => gpg if length(var.gpgkeys) > 0
   }
+
   user_id = coalesce(local._users[each.value.user_id].id, one(gitlab_user.this[*].id))
   key     = each.value.key
 }
 
-resource "gitlab_user_sshkey" "this" {
+resource "gitlab_user_sshkey" "key" {
+  count = var.sshkey != null ? 1 : 0
+
+  user_id    = coalesce(local._users[var.sshkey.user_id].id, one(gitlab_user.this[*].id))
+  title      = var.sshkey.title
+  key        = var.sshkey.key
+  expires_at = var.sshkey.expires_at
+}
+
+resource "gitlab_user_sshkey" "keys" {
   for_each = {
     for ssh in var.sshkeys :
-    substr(ssh.key, 0, 27) => ssh if length(var.sshkeys) > 0
+    "${index(var.sshkeys, ssh)}" => ssh if length(var.sshkeys) > 0
   }
+  // for_each = {
+  //   for ssh in var.sshkeys :
+  //   substr(ssh.key, 0, 27) => ssh if length(var.sshkeys) > 0
+  // }
   user_id    = coalesce(local._users[each.value.user_id].id, one(gitlab_user.this[*].id))
   title      = each.value.title
   key        = each.value.key
   expires_at = each.value.expires_at
 }
 
-resource "gitlab_personal_access_token" "this" {
+resource "gitlab_personal_access_token" "token" {
+  count = var.access_token != null ? 1 : 0
+
+  user_id    = coalesce(local._users[var.access_token.user_id].id, one(gitlab_user.this[*].id))
+  name       = var.access_token.name
+  expires_at = var.access_token.expires_at
+  scopes     = var.access_token.scopes
+}
+
+resource "gitlab_personal_access_token" "tokens" {
   for_each = {
     for token in var.access_tokens :
     token.name => token if length(var.access_tokens) > 0
   }
+
   user_id    = coalesce(local._users[each.value.user].id, one(gitlab_user.this[*].id))
   name       = each.value.name
   expires_at = each.value.expires_at
